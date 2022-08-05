@@ -1,0 +1,6 @@
+novnc: package-contains-eslint-config-file usr/share/novnc/utils/.eslintrc
+novnc: incorrect-path-for-interpreter usr/share/novnc/utils/b64-to-binary.pl (#!/usr/bin/env perl != /usr/bin/perl)
+novnc: script-not-executable usr/share/novnc/utils/convert.js
+novnc: script-not-executable usr/share/novnc/utils/genkeysymdef.js
+novnc: truetype-font-prohibits-installable-embedding [preview/print only] usr/share/novnc/app/styles/Orbitron700.ttf
+novnc: initial-upload-closes-no-bugs
