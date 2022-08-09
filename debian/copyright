@@ -1,9 +1,54 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: pi-top
-Source: https://pi-top.com
+Upstream-Name: novnc
+Source: https://github.com/pi-top/noVNC
 Upstream-Contact: deb-maintainers@pi-top.com
 
-Files: *
-Copyright: Copyright 2020 CEED ltd.
-License: Apache-2.0
- `/usr/share/common-licenses/Apache-2.0'.
+Files:
+    core/**/*.js
+    app/*.js
+    test/playback.js
+Copyright: Joel Martin, Solly Ross, Samuel Mannehed, Pierre Ossman 
+License: MPL 2.0
+
+License: MPL 2.0
+ `/usr/share/common-licenses/MPL-2.0'.
+
+
+Files:
+    *.html
+    app/styles/*.css
+Copyright: Joel Martin, Solly Ross, Samuel Mannehed, Pierre Ossman 
+License: BSD-2-clause
+
+License: BSD-2-clause
+ `/usr/share/novnc/docs/LICENSE.BSD-2-Clause'.
+
+
+Files:
+    app/styles/Orbitron*
+Copyright: Matt McInerney
+License: SIL Open Font License 1.1
+
+License: SIL Open Font License 1.1
+ `/usr/share/novnc/docs/LICENSE.OFL-1.1'.
+
+
+Files:
+    app/images/
+License: Creative Commons Attribution-ShareAlike
+
+
+Files:
+    core/base64.js          : MPL 2.0
+License: MPL 2.0
+
+License: MPL 2.0
+ `/usr/share/common-licenses/MPL-2.0'.
+
+
+Files:
+    vendor/pako/
+License: MIT
+
+License: MIT
+ `/usr/share/novnc/vendor/pako/lib/LICENSE'.
