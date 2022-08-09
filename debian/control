@@ -11,6 +11,8 @@ Package: novnc
 Architecture: all
 Depends:
  ${misc:Depends},
+ procps,
+ websockify,
 Description: HTML5 VNC client - daemon and programs
  noVNC is a HTML5 VNC (WebSockets, Canvas) with encryption (wss://) support
  client that runs well in any modern browser including mobile browsers
