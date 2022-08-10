@@ -4,5 +4,4 @@ novnc: script-not-executable usr/share/novnc/utils/convert.js
 novnc: script-not-executable usr/share/novnc/utils/genkeysymdef.js
 novnc: truetype-font-prohibits-installable-embedding [preview/print only] usr/share/novnc/app/styles/Orbitron700.ttf
 novnc: initial-upload-closes-no-bugs
-novnc: copyright-without-copyright-notice
 
