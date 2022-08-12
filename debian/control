@@ -13,7 +13,7 @@ Depends:
  ${misc:Depends},
  procps,
  python3-novnc,
- # Required by python3-novnc but not included in its dependencies
+# Required by python3-novnc but not included in its dependencies
  python3-numpy,
  websockify,
 Description: HTML5 VNC client - daemon and programs
