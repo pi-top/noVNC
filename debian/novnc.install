@@ -1,0 +1,6 @@
+app           /usr/share/novnc
+core          /usr/share/novnc
+docs          /usr/share/doc/novnc
+vendor        /usr/share/novnc
+vnc.html      /usr/share/novnc
+utils         /usr/share/novnc

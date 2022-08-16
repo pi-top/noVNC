@@ -1,0 +1,62 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: novnc
+Source: https://github.com/novnc/noVNC
+Upstream-Contact: deb-maintainers@pi-top.com
+
+Files:
+    core/**/*.js
+    app/*.js
+    tests/playback.js
+    *
+Copyright: Joel Martin, Solly Ross, Samuel Mannehed, Pierre Ossman 
+License: MPL-2.0
+
+License: MPL-2.0
+ `/usr/share/common-licenses/MPL-2.0'.
+
+
+Files:
+    *.html
+    app/styles/*.css
+Copyright: Joel Martin, Solly Ross, Samuel Mannehed, Pierre Ossman 
+License: BSD-2-clause
+
+License: BSD-2-clause
+ `/usr/share/doc/novnc/LICENSE.BSD-2-Clause'.
+
+
+Files:
+    app/styles/Orbitron*
+Copyright: Matt McInerney
+License: OFL-1.1
+
+License: OFL-1.1
+ `/usr/share/doc/novnc/LICENSE.OFL-1.1'.
+
+
+Files:
+    app/images/*
+Copyright: Joel Martin, Solly Ross, Samuel Mannehed, Pierre Ossman 
+License: CC-BY-SA-3.0
+
+License: CC-BY-SA-3.0
+ This work is licenced under the Creative Commons Attribution-Share Alike 3.0
+ Unported License. To view a copy of this licence, visit
+ https://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative
+ Commons, 171 Second Street, Suite 300, San Francisco, California 94105, USA.
+
+
+
+Files:
+    core/base64.js
+Copyright: ASD
+License: MPL-2.0
+
+
+Files:
+    vendor/pako/*
+Copyright: 2014-2016 Vitaly Puzrin
+License: MIT
+
+License: MIT
+ `/usr/share/novnc/vendor/pako/lib/LICENSE'.
