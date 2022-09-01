@@ -86,7 +86,7 @@ jobs:
       - name: Format Debian version into valid git tag
         run: |
           # Remove epoch
-          git_tag=$(echo "{env.CURRENT_VERSION}" | sed -r 's|^[0-9]:||')
+          git_tag=$(echo "${{ env.CURRENT_VERSION }}" | sed -r 's|^[0-9]:||')
           echo "RELEASE_TAG=${git_tag}" >> $GITHUB_ENV
 
       - name: Create Release
