@@ -2,33 +2,102 @@ name: Debian Package Build
 
 on:
   pull_request:
-    branches:
-      - master
   push:
     branches:
       - master
+      - bullseye
   workflow_dispatch:
 
 env:
   DEB_BUILD_DOCKER_IMAGE: "pitop/pi-top-os-deb-build"
-  DEB_BUILD_DOCKER_TAG: "latest"
+  DEB_BUILD_DOCKER_BRANCH: "master"
   CHANGELOG_AUTHOR_NAME: "pi-top"
   CHANGELOG_AUTHOR_EMAIL: "deb-maintainers@pi-top.com"
   PACKAGECLOUD_REPO: "experimental"
   OS: "debian"
-  DISTRO: "bullseye"
+  HOST_COMPILE: "\"architecture\":[\"amd64\"]"
+  X_COMPILE: "\"architecture\":[\"armhf\", \"arm64\"]"  # ARM 32 and 64 bit
 
 jobs:
-  build-debian-package:
+  check-architecture:
     runs-on: ubuntu-20.04
+    outputs:
+      architecture: ${{ steps.set-arch.outputs.architecture }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Determine target architecture
+        id: set-arch
+        # If any packages define architecture as other than 'all'
+        # then it can't be compiled on host architecture
+        run: |
+          architecture=$HOST_COMPILE
+          if grep '^Architecture:' debian/control | grep -q -v 'all'; then
+            architecture=$X_COMPILE
+          fi
+
+          echo "Building for $architecture"
+          echo "architecture=$architecture">>$GITHUB_OUTPUT
+
+  check-distro:
+    runs-on: ubuntu-20.04
+    outputs:
+      distros: ${{ steps.set-distros.outputs.distros }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Determine build distro
+        id: set-distros
+        run: |
+          distros="\"distro\":[\"bookworm\", \"bullseye\"]"
+
+          # if bullseye branch exists, build for bookworm only
+          if git branch -r | grep -Eq "origin/bullseye$"; then
+            distros="\"distro\":[\"bookworm\"]"
+          fi
+
+          # if pull request to bullseye branch or current branch is bullseye, build only for bullseye
+          if [ $(echo ${{ github.head_ref }} | grep -qE "bullseye$") ] || [ ${{ github.ref }} = 'refs/heads/bullseye' ]; then
+            distros="\"distro\":[\"bullseye\"]"
+          fi
+
+          echo "Building for $distros"
+          echo "distros=$distros">>$GITHUB_OUTPUT
+
+  set-build-matrix:
+    needs: [check-distro, check-architecture]
+    runs-on: ubuntu-20.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Determine build matrix
+        id: set-matrix
+        run: |
+          matrix='{${{needs.check-distro.outputs.distros}}, ${{needs.check-architecture.outputs.architecture}}}'
+          echo "Building for $matrix"
+          echo "matrix=$matrix">>$GITHUB_OUTPUT
+
+  build-debian-package:
+    runs-on: ubuntu-20.04
+    needs: set-build-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJSON(needs.set-build-matrix.outputs.matrix)}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           submodules: true
 
       - id: version
-        uses: docker://lpenz/ghaction-version-gen:0.3
+        uses: docker://lpenz/ghaction-version-gen:0.11.0
 
       - name: Add changelog entry for latest snapshot version
         uses: pi-top/git-debian-changelog-bump-action@master
@@ -39,51 +108,46 @@ jobs:
           snapshot_number: ${{ steps.version.outputs.distance }}
           since: ${{ steps.version.outputs.tag_latest }}
 
-      # We only want ARM builds. This step is here to provide the option of
-      # using a strategy matrix if additional builds (e.g. `arm64`) are desired
-      - name: Determine architecture to use from package info
-        # If architecture is 'all', then it can be compiled on host architecture
-        # All other pi-topOS cases require 'armhf'
-        run: |
-          target_architecture=amd64
-          if grep '^Architecture:' debian/control | grep -q -v 'all'; then
-            target_architecture=armhf
-          fi
-          echo "TARGET_ARCHITECTURE=${target_architecture}" >> $GITHUB_ENV
+      - name: Patch lintian-overrides
+        if: matrix.distro  == 'bullseye'
+        run:
+          cp -r debian/bullseye-overrides/* debian/ || true
 
       - name: Build Debian package
         uses: pi-top/debian-package-build-action@master
         with:
           # https://github.com/pi-top/debian-package-build-action/pull/19
           # lintian_check_changelog_spelling: false
-          target_architecture: ${{ env.TARGET_ARCHITECTURE }}
-          docker_image: ${{ env.DEB_BUILD_DOCKER_IMAGE }}:${{ env.DEB_BUILD_DOCKER_TAG }}
+          target_architecture: ${{ matrix.architecture }}
+          docker_image: ${{ env.DEB_BUILD_DOCKER_IMAGE }}:${{ matrix.distro }}-${{ env.DEB_BUILD_DOCKER_BRANCH }}
           signing_key: ${{ secrets.DEB_SIGNING_GPG_KEY }}
           signing_passphrase: ${{ secrets.DEB_SIGNING_GPG_PASSPHRASE }}
           build_directory: ./artifacts
+          LINTIAN_SHOW_OVERRIDES: 0
           # Optional, repo-specific build environment variables
           additional_env: |
             DATA="${{ secrets.DATA }}"
-            TLS_KEY="${{ secrets.TLS_KEY }}"
+            TLS_KEY="${{ secrets.CERT_PRIVATE_KEY }}"
+            PYTHON_PACKAGE_VERSION="${{ steps.version.outputs.tag_latest_ltrimv }}"
 
       - name: Generate artifact name
         run: |
           echo "ARTIFACT_PREFIX=$(basename -s .dsc "$(find . -name "*.dsc")")" >> $GITHUB_ENV
 
       - name: Upload binary package artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_PREFIX }}.deb
+          name: ${{ matrix.distro }}-${{ env.ARTIFACT_PREFIX }}.deb
           path: ./artifacts/*.deb
 
       - name: Upload source package artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_PREFIX }}.deb-src
+          name: ${{ matrix.distro }}-${{ env.ARTIFACT_PREFIX }}.deb-src
           path: ./artifacts/*.tar.xz
 
       - name: Upload package build metadata artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_PREFIX }}.metadata
           path: |
@@ -91,12 +155,33 @@ jobs:
             !./artifacts/*.deb
             !./artifacts/*.tar.xz
 
-      - uses: pi-top/ghaction-packagecloud@main
-        if: github.ref == 'refs/heads/master'
+      - name: Upload .dsc to PackageCloud
+        uses: pi-top/ghaction-packagecloud@main
+        # Only 1 .dsc is required for source so take armhf if there's multiple
+        if: |
+          (
+            (
+              github.ref == 'refs/heads/master' ||
+              github.ref == 'refs/heads/bullseye'
+            ) &&
+            (
+              matrix.architecture == 'amd64' ||
+              matrix.architecture == 'armhf'
+            )
+          )
         with:
-          repository: ${{ env.PACKAGECLOUD_REPO }}/${{ env.OS }}/${{ env.DISTRO }}
+          repository: ${{ env.PACKAGECLOUD_REPO }}/${{ env.OS }}/${{ matrix.distro }}
           files: |
             ./artifacts/*.dsc
+        env:
+          PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
+
+      - name: Upload .deb to PackageCloud
+        uses: pi-top/ghaction-packagecloud@main
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/bullseye'
+        with:
+          repository: ${{ env.PACKAGECLOUD_REPO }}/${{ env.OS }}/${{ matrix.distro }}
+          files: |
             ./artifacts/*.deb
         env:
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
